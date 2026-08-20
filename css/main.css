@@ -63,6 +63,10 @@ header {
   z-index: 100;
 }
 
+.logo{
+    max-width: 250px;
+}
+
 .nav {
   display: flex;
   flex-direction: column;
@@ -118,6 +122,17 @@ main {
   .pokemon-todos {
     grid-template-columns: repeat(3, 1fr);
   }
+}
+
+@media screen and (max-width: 550px) {
+    .header-top {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    #input-busqueda {
+        max-width: 100%;
+    }
 }
 
 /* Pokémon Card */
@@ -230,6 +245,34 @@ main {
   background-color: var(--clr-gray);
   padding: 0.25rem 0.6rem;
   border-radius: 100vmax;
+}
+
+/* Alineación de Logo y Buscador */
+.header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 1rem;
+}
+
+#input-busqueda {
+    padding: 0.6rem 1.2rem;
+    border-radius: 100vmax;
+    border: 2px solid transparent;
+    outline: none;
+    background-color: var(--clr-white);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    font-size: 0.9rem;
+    font-weight: 500;
+    width: 100%;
+    max-width: 280px;
+    transition: all 0.2s ease;
+}
+
+#input-busqueda:focus {
+    border-color: var(--clr-purple-accent);
+    box-shadow: 0 4px 12px rgba(119, 0, 255, 0.2);
 }
 
 /* Clases por tipo de Pokémon */

@@ -1,5 +1,6 @@
 const listaPokemon = document.querySelector("#listaPokemon");
 const botonesHeader = document.querySelectorAll(".btn-header");
+const inputBusqueda = document.querySelector("#input-busqueda");
 let URL = "https://pokeapi.co/api/v2/pokemon/";
 
 // Arreglo donde guardaremos todos los Pokémon ya procesados
@@ -32,7 +33,7 @@ function mostrarPokemon(poke) {
     // Formateo para que mantenga ceros a la izquierda (ej. 0001, 0025, 0150, 1025)
     let pokeId = poke.id.toString().padStart(4, '0');
 
-    // Conversión correcta de la PokéAPI: decímetros a metros / hectogramos a kilos
+    // Conversión de la PokéAPI: decímetros a metros / hectogramos a kilos
     let alturaMetros = poke.height / 10;
     let pesoKilos = poke.weight / 10;
 
@@ -65,9 +66,12 @@ function mostrarPokemon(poke) {
     listaPokemon.append(div);
 }
 
-// Lógica de los botones de filtrado instantáneo
+// Lógica de los botones de filtrado por tipo
 botonesHeader.forEach(boton => boton.addEventListener("click", (event) => {
     const botonId = event.currentTarget.id;
+    
+    // Limpiamos la búsqueda previa al hacer clic en un tipo
+    if (inputBusqueda) inputBusqueda.value = "";
     listaPokemon.innerHTML = "";
 
     todosLosPokemon.forEach(data => {
@@ -81,3 +85,21 @@ botonesHeader.forEach(boton => boton.addEventListener("click", (event) => {
         }
     });
 }));
+
+// Lógica del buscador por nombre e ID
+if (inputBusqueda) {
+    inputBusqueda.addEventListener("input", (e) => {
+        const textoBusqueda = e.target.value.toLowerCase().trim();
+        listaPokemon.innerHTML = "";
+
+        const pokemonesFiltrados = todosLosPokemon.filter(poke => {
+            const nombre = poke.name.toLowerCase();
+            const id = poke.id.toString();
+
+            // Coincide si el nombre contiene el texto o si el ID coincide
+            return nombre.includes(textoBusqueda) || id.includes(textoBusqueda);
+        });
+
+        pokemonesFiltrados.forEach(data => mostrarPokemon(data));
+    });
+}
