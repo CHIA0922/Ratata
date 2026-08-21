@@ -10,6 +10,9 @@ const cerrarModal = document.querySelector("#cerrar-modal");
 let URL = "https://pokeapi.co/api/v2/pokemon/";
 let todosLosPokemon = [];
 
+// Obtener favoritos guardados de localStorage o iniciar arreglo vacío
+let favoritos = JSON.parse(localStorage.getItem("pokemons_favoritos")) || [];
+
 // Carga inicial de datos
 async function cargarPokemones() {
     for (let i = 1; i <= 1025; i++) {
@@ -27,6 +30,18 @@ async function cargarPokemones() {
 
 cargarPokemones();
 
+// Alternar Pokémon en favoritos
+function toggleFavorito(id) {
+    const index = favoritos.indexOf(id);
+    if (index === -1) {
+        favoritos.push(id);
+    } else {
+        favoritos.splice(index, 1);
+    }
+    // Guardar en el almacenamiento local del navegador
+    localStorage.setItem("pokemons_favoritos", JSON.stringify(favoritos));
+}
+
 function mostrarPokemon(poke) {
     let tipos = poke.types.map((type) => `<p class="${type.type.name} tipo">${type.type.name}</p>`).join('');
     let pokeId = poke.id.toString().padStart(4, '0');
@@ -37,9 +52,14 @@ function mostrarPokemon(poke) {
                  || poke.sprites.front_default 
                  || "";
 
+    const esFav = favoritos.includes(poke.id);
+
     const div = document.createElement("div");
     div.classList.add("pokemon");
     div.innerHTML = `
+        <button class="btn-favorito ${esFav ? 'activo' : ''}" data-id="${poke.id}">
+            ${esFav ? '❤️' : '🤍'}
+        </button>
         <p class="pokemon-id-back">#${pokeId}</p>
         <div class="pokemon-imagen">
             <img src="${imagen}" alt="${poke.name}">
@@ -59,6 +79,17 @@ function mostrarPokemon(poke) {
         </div>
     `;
 
+    // Evento para el botón de favoritos en la tarjeta
+    const btnFav = div.querySelector(".btn-favorito");
+    btnFav.addEventListener("click", (e) => {
+        e.stopPropagation(); // Evita abrir el modal al hacer clic en el corazón
+        toggleFavorito(poke.id);
+        
+        const nuevoEstado = favoritos.includes(poke.id);
+        btnFav.classList.toggle("activo", nuevoEstado);
+        btnFav.innerHTML = nuevoEstado ? '❤️' : '🤍';
+    });
+
     // Evento para abrir el modal al hacer clic en la tarjeta
     div.addEventListener("click", () => abrirModalDetail(poke));
 
@@ -73,7 +104,6 @@ function abrirModalDetail(poke) {
     let pesoKilos = poke.weight / 10;
     let imagen = poke.sprites.other["official-artwork"].front_default || poke.sprites.front_default || "";
 
-    // Mapeo de estadísticas de la API
     let statsHTML = poke.stats.map(s => {
         let porcentaje = Math.min((s.base_stat / 255) * 100, 100);
         return `
@@ -86,6 +116,8 @@ function abrirModalDetail(poke) {
             </div>
         `;
     }).join('');
+
+    const esFav = favoritos.includes(poke.id);
 
     modalBody.innerHTML = `
         <div class="modal-header">
@@ -106,7 +138,27 @@ function abrirModalDetail(poke) {
         <div class="modal-stats-detalladas">
             ${statsHTML}
         </div>
+        <button id="btn-fav-modal" class="btn-favorito-modal ${esFav ? 'activo' : ''}">
+            <span>${esFav ? '❤️ Quitar de Favoritos' : '🤍 Agregar a Favoritos'}</span>
+        </button>
     `;
+
+    // Manejador del botón de favoritos del modal
+    const btnFavModal = document.querySelector("#btn-fav-modal");
+    btnFavModal.addEventListener("click", () => {
+        toggleFavorito(poke.id);
+        const nuevoEstado = favoritos.includes(poke.id);
+        
+        btnFavModal.classList.toggle("activo", nuevoEstado);
+        btnFavModal.querySelector("span").textContent = nuevoEstado ? 'Quitar de Favoritos' : 'Agregar a Favoritos';
+        
+        // Actualiza el estado visual del botón de la tarjeta de fondo
+        const btnTarjeta = document.querySelector(`.btn-favorito[data-id="${poke.id}"]`);
+        if (btnTarjeta) {
+            btnTarjeta.classList.toggle("activo", nuevoEstado);
+            btnTarjeta.innerHTML = nuevoEstado ? '❤️' : '🤍';
+        }
+    });
 
     modalPokemon.classList.remove("desactivado");
 }
@@ -120,7 +172,7 @@ window.addEventListener("click", (e) => {
     }
 });
 
-// Lógica de filtrado por categoría
+// Lógica de filtrado por categoría y vista de Favoritos
 botonesHeader.forEach(boton => boton.addEventListener("click", (event) => {
     const botonId = event.currentTarget.id;
     if (inputBusqueda) inputBusqueda.value = "";
@@ -129,6 +181,11 @@ botonesHeader.forEach(boton => boton.addEventListener("click", (event) => {
     todosLosPokemon.forEach(data => {
         if (botonId === "ver-todos") {
             mostrarPokemon(data);
+        } else if (botonId === "ver-favoritos") {
+            // Muestra solo los Pokémon que están guardados en favoritos
+            if (favoritos.includes(data.id)) {
+                mostrarPokemon(data);
+            }
         } else {
             const tipos = data.types.map(type => type.type.name);
             if (tipos.includes(botonId)) {
