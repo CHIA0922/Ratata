@@ -7,13 +7,40 @@ const modalPokemon = document.querySelector("#modal-pokemon");
 const modalBody = document.querySelector("#modal-body");
 const cerrarModal = document.querySelector("#cerrar-modal");
 
+// Referencias del Modo Oscuro/Claro
+const btnTheme = document.querySelector("#theme-toggle");
+const themeIcon = document.querySelector("#theme-icon");
+
 let URL = "https://pokeapi.co/api/v2/pokemon/";
 let todosLosPokemon = [];
 
 // Obtener favoritos guardados de localStorage o iniciar arreglo vacío
 let favoritos = JSON.parse(localStorage.getItem("pokemons_favoritos")) || [];
 
-// Carga inicial de datos
+// 1. Lógica para Persistencia de Modo Oscuro / Claro
+const temaGuardado = localStorage.getItem("tema_pokedex");
+
+if (temaGuardado === "oscuro") {
+    document.body.classList.add("dark-mode");
+    if (themeIcon) themeIcon.textContent = "☀️";
+} else {
+    if (themeIcon) themeIcon.textContent = "🌙";
+}
+
+if (btnTheme) {
+    btnTheme.addEventListener("click", () => {
+        document.body.classList.toggle("dark-mode");
+        const esOscuro = document.body.classList.contains("dark-mode");
+        
+        if (themeIcon) {
+            themeIcon.textContent = esOscuro ? "☀️" : "🌙";
+        }
+        
+        localStorage.setItem("tema_pokedex", esOscuro ? "oscuro" : "claro");
+    });
+}
+
+// 2. Carga inicial de datos desde PokéAPI
 async function cargarPokemones() {
     for (let i = 1; i <= 1025; i++) {
         try {
@@ -30,7 +57,7 @@ async function cargarPokemones() {
 
 cargarPokemones();
 
-// Alternar Pokémon en favoritos
+// 3. Función para alternar estado de favoritos
 function toggleFavorito(id) {
     const index = favoritos.indexOf(id);
     if (index === -1) {
@@ -38,10 +65,10 @@ function toggleFavorito(id) {
     } else {
         favoritos.splice(index, 1);
     }
-    // Guardar en el almacenamiento local del navegador
     localStorage.setItem("pokemons_favoritos", JSON.stringify(favoritos));
 }
 
+// 4. Renderizado de tarjeta individual
 function mostrarPokemon(poke) {
     let tipos = poke.types.map((type) => `<p class="${type.type.name} tipo">${type.type.name}</p>`).join('');
     let pokeId = poke.id.toString().padStart(4, '0');
@@ -79,10 +106,10 @@ function mostrarPokemon(poke) {
         </div>
     `;
 
-    // Evento para el botón de favoritos en la tarjeta
+    // Evento para el botón de favoritos dentro de la tarjeta
     const btnFav = div.querySelector(".btn-favorito");
     btnFav.addEventListener("click", (e) => {
-        e.stopPropagation(); // Evita abrir el modal al hacer clic en el corazón
+        e.stopPropagation();
         toggleFavorito(poke.id);
         
         const nuevoEstado = favoritos.includes(poke.id);
@@ -96,7 +123,7 @@ function mostrarPokemon(poke) {
     listaPokemon.append(div);
 }
 
-// Función para rellenar y mostrar el modal
+// 5. Renderizado y despliegue del modal
 function abrirModalDetail(poke) {
     let tipos = poke.types.map((type) => `<p class="${type.type.name} tipo">${type.type.name}</p>`).join('');
     let pokeId = poke.id.toString().padStart(4, '0');
@@ -139,7 +166,7 @@ function abrirModalDetail(poke) {
             ${statsHTML}
         </div>
         <button id="btn-fav-modal" class="btn-favorito-modal ${esFav ? 'activo' : ''}">
-            <span>${esFav ? '❤️ Quitar de Favoritos' : '🤍 Agregar a Favoritos'}</span>
+            <span>${esFav ? 'Quitar de Favoritos' : 'Agregar a Favoritos'}</span>
         </button>
     `;
 
@@ -152,7 +179,7 @@ function abrirModalDetail(poke) {
         btnFavModal.classList.toggle("activo", nuevoEstado);
         btnFavModal.querySelector("span").textContent = nuevoEstado ? 'Quitar de Favoritos' : 'Agregar a Favoritos';
         
-        // Actualiza el estado visual del botón de la tarjeta de fondo
+        // Sincroniza la tarjeta en la cuadrícula de fondo
         const btnTarjeta = document.querySelector(`.btn-favorito[data-id="${poke.id}"]`);
         if (btnTarjeta) {
             btnTarjeta.classList.toggle("activo", nuevoEstado);
@@ -163,7 +190,7 @@ function abrirModalDetail(poke) {
     modalPokemon.classList.remove("desactivado");
 }
 
-// Eventos de cierre del modal
+// Eventos para cerrar el modal
 cerrarModal.addEventListener("click", () => modalPokemon.classList.add("desactivado"));
 
 window.addEventListener("click", (e) => {
@@ -172,7 +199,7 @@ window.addEventListener("click", (e) => {
     }
 });
 
-// Lógica de filtrado por categoría y vista de Favoritos
+// 6. Filtrado por categorías y vista de Favoritos
 botonesHeader.forEach(boton => boton.addEventListener("click", (event) => {
     const botonId = event.currentTarget.id;
     if (inputBusqueda) inputBusqueda.value = "";
@@ -182,7 +209,6 @@ botonesHeader.forEach(boton => boton.addEventListener("click", (event) => {
         if (botonId === "ver-todos") {
             mostrarPokemon(data);
         } else if (botonId === "ver-favoritos") {
-            // Muestra solo los Pokémon que están guardados en favoritos
             if (favoritos.includes(data.id)) {
                 mostrarPokemon(data);
             }
@@ -195,7 +221,7 @@ botonesHeader.forEach(boton => boton.addEventListener("click", (event) => {
     });
 }));
 
-// Lógica del buscador
+// 7. Lógica del buscador por texto o ID
 if (inputBusqueda) {
     inputBusqueda.addEventListener("input", (e) => {
         const textoBusqueda = e.target.value.toLowerCase().trim();
@@ -210,3 +236,12 @@ if (inputBusqueda) {
         pokemonesFiltrados.forEach(data => mostrarPokemon(data));
     });
 }
+
+// 8. Seguimiento del cursor para la luz (glow)
+document.addEventListener("mousemove", (e) => {
+    const glow = document.querySelector(".cursor-glow");
+    if (glow) {
+        glow.style.left = e.clientX + "px";
+        glow.style.top = e.clientY + "px";
+    }
+});
